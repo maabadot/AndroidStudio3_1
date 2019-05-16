@@ -10,9 +10,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -24,6 +26,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText etName, etSurname, etSecondName;
     int elCount = 0;
     DBHelper dbHelper;
+    ArrayList names = new ArrayList();
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -71,6 +74,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int n1 = (int)Math.floor(Math.random() * rndNames.length);
             int n2 = (int)Math.floor(Math.random() * rndSurnames.length);
             int n3 = (int)Math.floor(Math.random() * rndSecondnames.length);
+
+            String rndFIO = rndSurnames[n2] + " " + rndNames[n1] + " " + rndSecondnames[n3];
+            names.add(rndFIO);
+
             contentValues.put(DBHelper.KEY_NAME, rndNames[n1]);
             contentValues.put(DBHelper.KEY_SURNAME, rndSurnames[n2]);
             contentValues.put(DBHelper.KEY_SECONDNAME, rndSecondnames[n3]);
@@ -88,6 +95,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String surname = etSurname.getText().toString();
         String secondname = etSecondName.getText().toString();
 
+        String FIO = surname + " " + name + " " + secondname;
+
         SQLiteDatabase database = dbHelper.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
@@ -102,13 +111,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId())
         {
             case R.id.btnAdd:
-                contentValues.put(DBHelper.KEY_NAME, name);
-                contentValues.put(DBHelper.KEY_SURNAME, surname);
-                contentValues.put(DBHelper.KEY_SECONDNAME, secondname);
-                contentValues.put(DBHelper.KEY_TIME, finalDateAndTime);
-
-                database.insert(DBHelper.TABLE_STUDENTS, null, contentValues);
-                elCount++;
+                if (name.equals("") && surname.equals("") && secondname.equals(""))
+                {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "Вы не заполнили поля.", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else if (names.contains(FIO))
+                {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "Такой человек уже есть в базе.", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else
+                {
+                    contentValues.put(DBHelper.KEY_NAME, name);
+                    contentValues.put(DBHelper.KEY_SURNAME, surname);
+                    contentValues.put(DBHelper.KEY_SECONDNAME, secondname);
+                    contentValues.put(DBHelper.KEY_TIME, finalDateAndTime);
+                    names.add(FIO);
+                    database.insert(DBHelper.TABLE_STUDENTS, null, contentValues);
+                    elCount++;
+                }
                 break;
 
             case R.id.btnRead:
@@ -117,15 +141,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.btnChange:
-                contentValues.put(DBHelper.KEY_NAME, "Иван");
-                contentValues.put(DBHelper.KEY_SURNAME, "Иванов");
-                contentValues.put(DBHelper.KEY_SECONDNAME, "Иванович");
-                String where = KEY_ID + "=" + elCount;
-                database.update(DBHelper.TABLE_STUDENTS, contentValues, where, null);
+                if (names.contains("Иванов Иван Иванович"))
+                {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "Такой человек уже есть в базе.", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else
+                {
+                    contentValues.put(DBHelper.KEY_NAME, "Иван");
+                    contentValues.put(DBHelper.KEY_SURNAME, "Иванов");
+                    contentValues.put(DBHelper.KEY_SECONDNAME, "Иванович");
+                    String where = KEY_ID + "=" + elCount;
+                    names.set(elCount - 1, "Иванов Иван Иванович");
+                    database.update(DBHelper.TABLE_STUDENTS, contentValues, where, null);
+                }
+
                 break;
 
             case R.id.btnClear:
                 database.delete(DBHelper.TABLE_STUDENTS, null, null);
+                names.clear();
+                elCount = 0;
                 break;
         }
         dbHelper.close();
